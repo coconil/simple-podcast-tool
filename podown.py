@@ -2,7 +2,7 @@
 import requests
 import sys
 import xml.sax as sax
-
+import os
 import search
 
 
@@ -11,6 +11,9 @@ def download(url, filename=None):
         filename = url.split('/')[-1]
     else:
         filename += '.mp3'
+
+    if os.path.exists(filename):
+        return
     r = requests.get(url, stream=True)
     size = int(r.headers['content-length'])
     download_size = 0
@@ -21,7 +24,7 @@ def download(url, filename=None):
                 print("download: {}%".format(
                     int(download_size*100/size)), end='\r')
                 f.write(chunk)
-        print('\n')
+        print('')
 
 
 if __name__ == '__main__':
@@ -32,4 +35,6 @@ if __name__ == '__main__':
         for i in items:
             print(i['title'])
             print('url:', i['url'])
-            download(i['url'], i['title'])
+            # / is not allowed in filename
+            download(i['url'], i['title'].replace('/', '-'))
+            print('')
