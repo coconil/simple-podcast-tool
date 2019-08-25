@@ -21,6 +21,8 @@ class ItemHandler(sax.ContentHandler):
             elif tag == 'enclosure':
                 self.current_item['url'] = attributes["url"]
                 self.current_item['length'] = int(attributes["length"])
+            elif tag == 'itunes:duration':
+                self.field = tag
 
     def endElement(self, tag):
         if tag == 'item':
@@ -30,8 +32,10 @@ class ItemHandler(sax.ContentHandler):
             self.field = None
 
     def characters(self, content):
-        if self.field:
-            self.current_item[self.field] = content
+        if self.field == 'title':
+            self.current_item['title'] = content
+        elif self.field == 'itunes:duration':
+            self.current_item['duration'] = int(content)
 
 
 def search(name, save=False):
@@ -69,3 +73,4 @@ if __name__ == '__main__':
             for i in items:
                 print(i['title'])
                 print('url:', i['url'])
+                print('duration:', i['duration'])
