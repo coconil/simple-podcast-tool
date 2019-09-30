@@ -1,5 +1,5 @@
 import vlc
-import search
+import podcast
 import time
 import sys
 
