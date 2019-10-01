@@ -1,38 +1,44 @@
 import vlc
-import podcast
-import time
 import sys
 
 
-def time_convert(sec):
-    hour = sec // 60//60 % 24
-    min = sec // 60 % 60
-    sec = sec % 60
-    return (hour, min, sec)
+class Player:
+    def __init__(self):
+        self.instance = vlc.Instance()
+        self.player = self.instance.media_player_new()
+        self.duration = 0
+        self.media = None
 
+    def play(self, url, wid=None, duration=-1):
+        print('url:', url)
+        self.media = self.instance.media_new_location(url)
 
-def print_play_time(time, duration):
-    print('play: {}:{}:{}/{}:{}:{}'.format(time[0], time[1],
-                                           time[2], duration[0], duration[1], duration[2]), end='\r')
+        if duration < 0:
+            self.media.parse()
+            duration = self.media.get_duration() // 1000
+        self.duration = duration
+        self.player.set_media(self.media)
 
+        if wid:
+            if sys.platform.startswith('linux'):  # for Linux using the X Server
+                self.player.set_xwindow(wid)
+            elif sys.platform == "win32":  # for Windows
+                self.player.set_hwnd(wid)
+            elif sys.platform == "darwin":  # for MacOS
+                self.player.set_nsobject(wid)
 
-def play(url, duration=-1):
-    instance = vlc.Instance()
-    player = instance.media_player_new()
-    media = instance.media_new_location(url)
-    media.parse()
-    player.set_media(media)
-    if duration < 0:
-        duration = media.get_duration()//1000
-    player.play()
-    time.sleep(3)
-    while player.is_playing():
-        playtime = player.get_time()//1000
-        print_play_time(time_convert(playtime),
-                        time_convert(duration))
-        time.sleep(1)
+        self.player.play()
+    def stop(self):
+        if self.player.is_playing():
+            self.player.stop()
+    def get_duration(self):
+        return self.duration
 
+    def get_playtime(self):
+        return self.player.get_time() // 1000
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        play(sys.argv[1])
+    def set_playtime(self, time):
+        self.player.set_time(time * 1000)
+
+    def is_playing(self):
+        return self.player.is_playing()
