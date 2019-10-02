@@ -91,7 +91,6 @@ def get_subscribe():
     else:
         podcasts = []
 
-    print(podcasts)
     return podcasts
 
 

@@ -148,7 +148,6 @@ class MainWindow(QtWidgets.QMainWindow):
     @Slot()
     def start_play_item(self, index):
         i = index.row()
-        print(self.items[i])
 
         if self.player.state() == QMediaPlayer.PlayingState:
             self.player.stop()
