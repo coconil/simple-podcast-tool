@@ -2,9 +2,9 @@ import sys
 
 from PySide2.QtCore import Qt, Slot, QTimer, QStringListModel
 from PySide2 import QtCore, QtWidgets, QtGui
+from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QSlider, QHBoxLayout, QLabel, QFrame, QListView, QPushButton, \
     QAbstractItemView
-import player
 import podcast
 
 
@@ -46,8 +46,8 @@ class MyWidget(QWidget):
         self.status_layout.addWidget(self.playtime_label)
         self.status_layout.addWidget(self.progress_bar)
         self.status_layout.addWidget(self.duration_label)
-        self.status_layout.addWidget(self.play_botton)
-        self.status_layout.addWidget(self.download_button)
+        #self.status_layout.addWidget(self.play_botton)
+        #self.status_layout.addWidget(self.download_button)
 
         self.layout = QVBoxLayout()
         self.layout.addLayout(self.content_layout)
@@ -79,12 +79,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         QtWidgets.QMainWindow.__init__(self)
 
-        self.setWindowTitle("SimplePlayer")
+        self.setWindowTitle("Simple Podcast Player")
         self.widget = widget
         self.data = data
         self.items = None
         self.setCentralWidget(widget)
-        self.player = player.Player()
+        self.player = QMediaPlayer()
+        self.media = None
         # Menu
         self.menu = QtWidgets.QMenuBar()  #
         self.menu = self.menuBar()
@@ -103,28 +104,60 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.widget.podcasts_list.clicked.connect(self.update_item_list)
         self.widget.item_list.doubleClicked.connect(self.start_play_item)
-        self.widget.progress_bar.sliderMoved.connect(self.on_select_progress)
+        self.widget.progress_bar.sliderPressed.connect(self.on_select_progress_begin)
+        self.widget.progress_bar.sliderReleased.connect(self.on_select_progress_end)
+        self.widget.progress_bar.sliderMoved.connect(self.on_select_progress_move)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.on_timer)
         self.timer.start(1000)
 
+        self.begin_seek = False
+        self.play_url = None
+
     @Slot()
-    def on_select_progress(self, value):
-        self.player.set_playtime(value)
+    def on_select_progress_begin(self):
+        self.begin_seek = True
+
+    @Slot()
+    def on_select_progress_move(self, value):
+        self.widget.playtime_label.setText(time_string(value))
+
+    @Slot()
+    def on_select_progress_end(self):
+        if self.player.isSeekable():
+            self.player.stop()
+            value = self.widget.progress_bar.value()
+
+            self.media = QMediaContent(self.play_url)
+            self.player.setMedia(self.media)
+            self.player.setPosition(value * 1000)
+            self.player.play()
+            self.begin_seek = False
+        else:
+            print('not seekable')
 
     @Slot()
     def on_timer(self):
         player = self.player
-        if player.is_playing():
-            playtime = player.get_playtime()
-            self.widget.set_progress(playtime)
+        if not self.begin_seek:
+            if player.state() == QMediaPlayer.PlayingState:
+                playtime = player.position() // 1000
+                self.widget.set_progress(playtime)
 
     @Slot()
     def start_play_item(self, index):
         i = index.row()
         print(self.items[i])
-        self.player.play(self.items[i]['url'])
+
+        if self.player.state() == QMediaPlayer.PlayingState:
+            self.player.stop()
+
+        self.begin_seek = False
+        self.play_url = self.items[i]['url']
+        self.media = QMediaContent(self.items[i]['url'])
+        self.player.setMedia(self.media)
+        self.player.play()
         self.widget.set_duration(self.items[i]['duration'])
 
     @Slot()
