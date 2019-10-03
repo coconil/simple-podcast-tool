@@ -46,8 +46,8 @@ class MyWidget(QWidget):
         self.status_layout.addWidget(self.playtime_label)
         self.status_layout.addWidget(self.progress_bar)
         self.status_layout.addWidget(self.duration_label)
-        #self.status_layout.addWidget(self.play_botton)
-        #self.status_layout.addWidget(self.download_button)
+        # self.status_layout.addWidget(self.play_botton)
+        # self.status_layout.addWidget(self.download_button)
 
         self.layout = QVBoxLayout()
         self.layout.addLayout(self.content_layout)
@@ -79,7 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         QtWidgets.QMainWindow.__init__(self)
 
-        self.setWindowTitle("Simple Podcast Player")
+        self.setWindowTitle("Simple Podcast Utility")
         self.widget = widget
         self.data = data
         self.items = None
@@ -104,9 +104,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.widget.podcasts_list.clicked.connect(self.update_item_list)
         self.widget.item_list.doubleClicked.connect(self.start_play_item)
-        self.widget.progress_bar.sliderPressed.connect(self.on_select_progress_begin)
-        self.widget.progress_bar.sliderReleased.connect(self.on_select_progress_end)
-        self.widget.progress_bar.sliderMoved.connect(self.on_select_progress_move)
+        self.widget.progress_bar.sliderPressed.connect(
+            self.on_select_progress_begin)
+        self.widget.progress_bar.sliderReleased.connect(
+            self.on_select_progress_end)
+        self.widget.progress_bar.sliderMoved.connect(
+            self.on_select_progress_move)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.on_timer)
@@ -126,11 +129,13 @@ class MainWindow(QtWidgets.QMainWindow):
     @Slot()
     def on_select_progress_end(self):
         if self.player.isSeekable():
-            self.player.stop()
-            value = self.widget.progress_bar.value()
 
-            self.media = QMediaContent(self.play_url)
-            self.player.setMedia(self.media)
+            value = self.widget.progress_bar.value()
+            if sys.platform == 'win32':
+                self.player.stop()
+                self.media = QMediaContent(self.play_url)
+                self.player.setMedia(self.media)
+
             self.player.setPosition(value * 1000)
             self.player.play()
             self.begin_seek = False
