@@ -129,15 +129,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @Slot()
     def on_select_progress_end(self):
         if self.player.isSeekable():
-
             value = self.widget.progress_bar.value()
-            if sys.platform == 'win32':
-                self.player.stop()
-                self.media = QMediaContent(self.play_url)
-                self.player.setMedia(self.media)
-
             self.player.setPosition(value * 1000)
-            self.player.play()
             self.begin_seek = False
         else:
             print('not seekable')
