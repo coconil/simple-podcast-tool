@@ -4,7 +4,7 @@ from PySide2.QtCore import Qt, Slot, QTimer, QStringListModel
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 from PySide2.QtWidgets import QVBoxLayout, QWidget, QSlider, QHBoxLayout, QLabel, QFrame, QListView, QPushButton, \
-    QAbstractItemView
+    QAbstractItemView, QDialog, QLineEdit
 import podcast
 
 
@@ -13,6 +13,37 @@ def time_string(sec):
     min = sec // 60 % 60
     sec = sec % 60
     return '{}:{}:{}'.format(hour, min, sec)
+
+
+class SearchDialog(QDialog):
+    def __init__(self,podcast):
+        super().__init__()
+        self.podcast=podcast
+        self.setWindowTitle("Search a podcast")
+        self.edit = QLineEdit()
+        self.result_list = QListView()
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.edit)
+        self.layout.addWidget(self.result_list)
+        self.setLayout(self.layout)
+
+        self.edit.returnPressed.connect(self.search)
+        self.result_list.doubleClicked.connect(self.subscribe)
+        self.result_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    @Slot()
+    def search(self):
+        self.r = self.podcast.search(self.edit.text())
+        names = []
+        if self.r:
+            for i in self.r:
+                names.append(i['collectionName'])
+            model = QStringListModel(names)
+            self.result_list.setModel(model)
+    @Slot()
+    def subscribe(self, index):
+        i = index.row()
+        self.podcast.subscribe(self.r[i])
 
 
 class MyWidget(QWidget):
@@ -81,7 +112,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setWindowTitle("Simple Podcast Utility")
         self.widget = widget
-        self.data = data
+        self.podcast = podcast
         self.items = None
         self.setCentralWidget(widget)
         self.player = QMediaPlayer()
@@ -99,7 +130,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file_menu.addAction(exit_action)
         add_action.triggered.connect(self.add_podcast)
         exit_action.triggered.connect(self.exit_app)
-        names = self.get_podcast_name_list(self.data)
+        names = self.get_podcast_name_list(self.podcast.get_subscribe())
         self.widget.update_podcasts_list(names)
 
         self.widget.podcasts_list.clicked.connect(self.update_item_list)
@@ -160,8 +191,8 @@ class MainWindow(QtWidgets.QMainWindow):
     @Slot()
     def update_item_list(self, index):
         i = index.row()
-        feedUrl = self.data[i]['feedUrl']
-        self.items = podcast.get_feed(feedUrl)
+        feed_url = self.podcast.podcasts[i]['feedUrl']
+        self.items = podcast.get_feed(feed_url)
         names = self.get_item_name_list(self.items)
         self.widget.update_items_list(names)
 
@@ -179,7 +210,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @Slot()
     def add_podcast(self, checked):
-        pass
+        dialog = SearchDialog(self.podcast)
+        dialog.exec_()
 
     @Slot()
     def exit_app(self, checked):
@@ -189,9 +221,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
-    podcasts = podcast.get_subscribe()
+    podcast = podcast.Podcast()
     widget = MyWidget()
-    window = MainWindow(widget, podcasts)
+    window = MainWindow(widget, podcast)
     window.resize(800, 600)
     window.show()
     sys.exit(app.exec_())

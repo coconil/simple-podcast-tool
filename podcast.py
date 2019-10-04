@@ -41,10 +41,10 @@ class ItemHandler(sax.ContentHandler):
                 self.current_item['duration'] = int(content)
             elif content.count(':') == 1:
                 t = time.strptime(content, "%M:%S")
-                self.current_item['duration']=t.tm_min*60+ t.tm_sec
+                self.current_item['duration'] = t.tm_min * 60 + t.tm_sec
             elif content.count(':') == 2:
                 t = time.strptime(content, "%H:%M:%S")
-                self.current_item['duration']=t.tm_hour*3600+t.tm_min*60+ t.tm_sec
+                self.current_item['duration'] = t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec
 
 
 class Downloader:
@@ -72,56 +72,57 @@ class Downloader:
             print('')
 
 
-def get_feed(url):
-    handler = ItemHandler()
-    r = requests.get(url)
-    text = r.text
-    sax.parseString(r.text, handler)
-    return handler.items
+class Podcast:
+    def __init__(self):
+        self.podcasts = None
+        self.f = None
+        self.config = None
 
+    def get_feed(self, url):
+        handler = ItemHandler()
+        r = requests.get(url)
+        text = r.text
+        sax.parseString(r.text, handler)
+        return handler.items
 
-def get_subscribe():
-    podcasts = None
-    j = None
-    f = open(os.path.expanduser('~/.config/SimplePodcast/subscribe.json'), encoding='utf8')
-    if f:
-        j = json.loads(f.read())
-        podcasts = j['podcasts']
-        f.close()
-    else:
-        podcasts = []
+    def get_subscribe(self):
+        path_dir = os.path.expanduser('~/.config/SimplePodcast/')
+        if not os.path.exists(path_dir):
+            os.makedirs(path_dir)
+        self.f = open(path_dir + 'subscribe.json', 'a+')
+        if self.f and self.f.tell():
+            self.f.seek(0)
+            self.config = json.loads(self.f.read())
+            self.podcasts = self.config['podcasts']
+        else:
+            self.config = {'podcasts': []}
+            self.podcasts = self.config['podcasts']
 
-    return podcasts
+        return self.podcasts
 
+    def subscribe(self, item):
+        print('subs', item)
+        self.podcasts.append(item)
+        text = json.dumps(self.config)
+        print('json: ', text)
+        self.f.seek(0)
+        self.f.truncate()
+        self.f.write(text)
+        self.f.flush()
 
-def subscribe():
-    pass
+    def unsubscribe(self):
+        pass
 
-
-def unsubscribe():
-    pass
-
-
-def search(name, save=False):
-    base_url = "https://itunes.apple.com/search?media=podcast&country=cn&entity=podcast&term="
-    handler = ItemHandler()
-    r = requests.get(base_url + name)
-    j = json.loads(r.text)
-    if save:
-        with open(name + '.json', 'w') as f:
-            f.write(r.text)
-    count = j['resultCount']
-    if count <= 0:
-        return None
-    else:
-        return j['results']
-
-
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        items = search(sys.argv[1], True)
-        if items:
-            for i in items:
-                print(i['title'])
-                print('url:', i['url'])
-                print('duration:', i['duration'])
+    def search(self, name, save=False):
+        base_url = "https://itunes.apple.com/search?media=podcast&country=cn&entity=podcast&term="
+        handler = ItemHandler()
+        r = requests.get(base_url + name)
+        j = json.loads(r.text)
+        if save:
+            with open(name + '.json', 'w') as f:
+                f.write(r.text)
+        count = j['resultCount']
+        if count <= 0:
+            return None
+        else:
+            return j['results']
