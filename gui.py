@@ -16,7 +16,7 @@ def time_string(sec):
 
 
 class SearchDialog(QDialog):
-    def __init__(self,podcast):
+    def __init__(self,subscribe,search):
         super().__init__()
         self.podcast=podcast
         self.setWindowTitle("Search a podcast")
@@ -27,23 +27,12 @@ class SearchDialog(QDialog):
         self.layout.addWidget(self.result_list)
         self.setLayout(self.layout)
 
-        self.edit.returnPressed.connect(self.search)
-        self.result_list.doubleClicked.connect(self.subscribe)
+        self.edit.returnPressed.connect(search)
+        self.result_list.doubleClicked.connect(subscribe)
         self.result_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-    @Slot()
-    def search(self):
-        self.r = self.podcast.search(self.edit.text())
-        names = []
-        if self.r:
-            for i in self.r:
-                names.append(i['collectionName'])
-            model = QStringListModel(names)
-            self.result_list.setModel(model)
-    @Slot()
-    def subscribe(self, index):
-        i = index.row()
-        self.podcast.subscribe(self.r[i])
+
+
 
 
 class MyWidget(QWidget):
@@ -196,6 +185,23 @@ class MainWindow(QtWidgets.QMainWindow):
         names = self.get_item_name_list(self.items)
         self.widget.update_items_list(names)
 
+    @Slot()
+    def subscribe(self, index):
+        i = index.row()
+        self.podcast.subscribe(self.search_r[i])
+        names = self.get_podcast_name_list(self.podcast.get_subscribe())
+        self.widget.update_podcasts_list(names)
+
+    @Slot()
+    def search(self):
+        self.search_r = self.podcast.search(self.dialog.edit.text())
+        names = []
+        if self.search_r:
+            for i in self.search_r:
+                names.append(i['collectionName'])
+            model = QStringListModel(names)
+            self.dialog.result_list.setModel(model)
+
     def get_item_name_list(self, items):
         names = []
         for item in items:
@@ -210,8 +216,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @Slot()
     def add_podcast(self, checked):
-        dialog = SearchDialog(self.podcast)
-        dialog.exec_()
+        self.dialog = SearchDialog(self.subscribe,self.search)
+        self.dialog.exec_()
+        self.dialog=None
 
     @Slot()
     def exit_app(self, checked):

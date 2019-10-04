@@ -89,7 +89,10 @@ class Podcast:
         path_dir = os.path.expanduser('~/.config/SimplePodcast/')
         if not os.path.exists(path_dir):
             os.makedirs(path_dir)
-        self.f = open(path_dir + 'subscribe.json', 'a+')
+
+        if not self.f:
+            self.f = open(path_dir + 'subscribe.json', 'a+')
+
         if self.f and self.f.tell():
             self.f.seek(0)
             self.config = json.loads(self.f.read())
@@ -101,10 +104,8 @@ class Podcast:
         return self.podcasts
 
     def subscribe(self, item):
-        print('subs', item)
         self.podcasts.append(item)
         text = json.dumps(self.config)
-        print('json: ', text)
         self.f.seek(0)
         self.f.truncate()
         self.f.write(text)
