@@ -80,9 +80,10 @@ class Podcast:
 
     def get_feed(self, url):
         handler = ItemHandler()
-        r = requests.get(url)
+        headers={'user-agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'}
+        r = requests.get(url,headers=headers)
         text = r.text
-        sax.parseString(r.text, handler)
+        sax.parseString(text, handler)
         return handler.items
 
     def get_subscribe(self):
