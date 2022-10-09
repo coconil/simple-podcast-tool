@@ -1,9 +1,9 @@
 import sys
 
-from PySide2.QtCore import Qt, Slot, QTimer, QStringListModel
-from PySide2 import QtCore, QtWidgets, QtGui
-from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
-from PySide2.QtWidgets import QVBoxLayout, QWidget, QSlider, QHBoxLayout, QLabel, QFrame, QListView, QPushButton, \
+from PySide6.QtCore import Qt, Slot, QTimer, QStringListModel,QUrl
+from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6.QtMultimedia import QMediaPlayer,QAudioOutput
+from PySide6.QtWidgets import QVBoxLayout, QWidget, QSlider, QHBoxLayout, QLabel, QFrame, QListView, QPushButton, \
     QAbstractItemView, QDialog, QLineEdit
 import podcast
 
@@ -105,6 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.items = None
         self.setCentralWidget(widget)
         self.player = QMediaPlayer()
+        self.audioOutput=QAudioOutput()
         self.media = None
         # Menu
         self.menu = QtWidgets.QMenuBar()  #
@@ -113,8 +114,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setMenuBar(self.menu)
         self.file_menu = self.menu.addMenu("File")
 
-        add_action = QtWidgets.QAction("Add", self)
-        exit_action = QtWidgets.QAction("Exit", self)
+        add_action = QtGui.QAction("Add", self)
+        exit_action = QtGui.QAction("Exit", self)
         self.file_menu.addAction(add_action)
         self.file_menu.addAction(exit_action)
         add_action.triggered.connect(self.add_podcast)
@@ -159,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_timer(self):
         player = self.player
         if not self.begin_seek:
-            if player.state() == QMediaPlayer.PlayingState:
+            if player.playbackState() == QMediaPlayer.PlayingState:
                 playtime = player.position() // 1000
                 self.widget.set_progress(playtime)
 
@@ -167,14 +168,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def start_play_item(self, index):
         i = index.row()
 
-        if self.player.state() == QMediaPlayer.PlayingState:
+        if self.player.playbackState() == QMediaPlayer.PlayingState:
             self.player.stop()
 
         self.begin_seek = False
         self.play_url = self.items[i]['url']
-        self.media = QMediaContent(self.items[i]['url'])
-        self.player.setMedia(self.media)
+        self.media = QUrl(self.items[i]['url'])
+        self.player.setAudioOutput(self.audioOutput)
+        self.player.setSource(self.media)
         self.player.play()
+        print('source',self.player.source())
         self.widget.set_duration(self.items[i]['duration'])
 
     @Slot()
@@ -233,4 +236,4 @@ if __name__ == "__main__":
     window = MainWindow(widget, podcast)
     window.resize(800, 600)
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
