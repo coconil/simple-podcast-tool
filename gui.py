@@ -31,10 +31,6 @@ class SearchDialog(QDialog):
         self.result_list.doubleClicked.connect(subscribe)
         self.result_list.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-
-
-
-
 class MyWidget(QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -59,15 +55,15 @@ class MyWidget(QWidget):
         self.content_layout.setStretch(0, 2)
         self.content_layout.addWidget(self.item_list)
         self.content_layout.setStretch(1, 8)
-        self.download_button = QPushButton("&Download")
-        self.play_botton = QPushButton("&Play")
+        #self.download_button = QPushButton("Download")
+        self.play_button = QPushButton("Play")
 
         self.status_layout = QHBoxLayout()
         self.status_layout.addWidget(self.playtime_label)
         self.status_layout.addWidget(self.progress_bar)
         self.status_layout.addWidget(self.duration_label)
-        # self.status_layout.addWidget(self.play_botton)
-        # self.status_layout.addWidget(self.download_button)
+        self.status_layout.addWidget(self.play_button)
+        self.status_layout.addWidget(self.download_button)
 
         self.layout = QVBoxLayout()
         self.layout.addLayout(self.content_layout)
@@ -125,6 +121,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.widget.podcasts_list.clicked.connect(self.update_item_list)
         self.widget.item_list.doubleClicked.connect(self.start_play_item)
+        self.widget.play_button.clicked.connect(self.toggle_play)
         self.widget.progress_bar.sliderPressed.connect(
             self.on_select_progress_begin)
         self.widget.progress_bar.sliderReleased.connect(
@@ -163,11 +160,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if player.playbackState() == QMediaPlayer.PlayingState:
                 playtime = player.position() // 1000
                 self.widget.set_progress(playtime)
-
-    @Slot()
-    def start_play_item(self, index):
-        i = index.row()
-
+    def do_play(self,i):
         if self.player.playbackState() == QMediaPlayer.PlayingState:
             self.player.stop()
 
@@ -177,8 +170,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.player.setAudioOutput(self.audioOutput)
         self.player.setSource(self.media)
         self.player.play()
-        print('source',self.player.source())
         self.widget.set_duration(self.items[i]['duration'])
+        self.widget.play_button.setText('Pause')
+    @Slot()
+    def toggle_play(self):
+        if self.player.playbackState() == QMediaPlayer.PlayingState:
+            self.player.pause()
+            self.widget.play_button.setText('play')
+        elif self.player.playbackState() == QMediaPlayer.PausedState:
+            self.player.play()
+            self.widget.play_button.setText('Pause')
+        else:
+            indexs=self.widget.item_list.selectedIndexes()
+            self.do_play(indexs[0].row())
+
+    @Slot()
+    def start_play_item(self, index):
+        i = index.row()
+        self.do_play(i)
+
+
 
     @Slot()
     def update_item_list(self, index):
@@ -220,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
     @Slot()
     def add_podcast(self, checked):
         self.dialog = SearchDialog(self.subscribe,self.search)
-        self.dialog.exec_()
+        self.dialog.exec()
         self.dialog=None
 
     @Slot()
