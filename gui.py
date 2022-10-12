@@ -55,7 +55,7 @@ class MyWidget(QWidget):
         self.content_layout.setStretch(0, 2)
         self.content_layout.addWidget(self.item_list)
         self.content_layout.setStretch(1, 8)
-        #self.download_button = QPushButton("Download")
+        self.download_button = QPushButton("Download")
         self.play_button = QPushButton("Play")
 
         self.status_layout = QHBoxLayout()
